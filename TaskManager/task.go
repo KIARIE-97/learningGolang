@@ -21,16 +21,29 @@ var filename string = "tasks.json"
 
 //load task- waiting area avoids overwriting
 func loadTasks() ([]Task, error) {
+	//check if exists
 	data, err := os.ReadFile(filename)
 	if err !=nil {
 		if os.IsNotExist(err) {
 			return []Task{}, nil //no file yet return empty string
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
+	if len(data) ==0 {
+		fmt.Println("Info: tasks.json is empty, starting fresh")
+        return []Task{}, nil
+	}
+
 	var tasks []Task
 	err = json.Unmarshal(data, &tasks)
-	return tasks, err
+	if err != nil{
+		//backup oled file
+		backupName := filename +".backup"
+		os.WriteFile(backupName, data, 0644)
+		fmt.Printf("Warning: Corrupted tasks.json, backed up to %s\n", backupName)
+        return []Task{}, nil
+	}
+	return tasks, nil
 }
 
 // addtask
@@ -56,42 +69,52 @@ func AddTask(title string, desc string) (Task, error){
 	}
 	tasks = append(tasks, t)
 	err = saveAllTask(tasks)
-	return t, err
+	 if err != nil {
+        return Task{}, err
+    }
+	return t, nil
 }
 
 // save to json
 func  saveAllTask(tasks []Task) error{
 	data, err := json.MarshalIndent(tasks, "", " ")
 	if err !=nil {
-		return err
+		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
- return os.WriteFile(filename, data, 0644)
+ err= os.WriteFile(filename, data, 0644)
+ if err != nil {
+        return fmt.Errorf("failed to write file: %w", err)
+    }
+    
+    return nil
 
 }
 
 //mark complete
-func (t *Task) Complete(id int) error {
+func  Complete(id int) error {
 	tasks,err := loadTasks()
 	if err != nil {
-		return fmt.Errorf("failed to load tasks: %w",err)
+		return err
 	}
-
-	found := false
 
 	for i := range tasks {
 		if tasks[i].ID == id {
+			if tasks[i].Completed {
+				 return fmt.Errorf("task #%d is already completed", id)
+			}
+
 			tasks[i].Completed = true
-			found = true
-			fmt.Printf("✅ Task #%d marked as complete\n", id)
-            break
+			err = saveAllTask(tasks)
+			if err != nil {
+                return err
+            }
+            fmt.Printf("✅ Task #%d: '%s' marked as complete\n", id, tasks[i].Title)
+            return nil
 		}
 	}
 
-	if !found {
-        return fmt.Errorf("task with ID %d not found", id)
-    }
-	return saveAllTask(tasks)
+	return fmt.Errorf("task with ID %d not found", id)
 }
 
 //removetask - use of slice
@@ -115,7 +138,8 @@ func RemoveTask(id int) error {
 		return  fmt.Errorf("task with id %d not found", id)
 	}
 	//remove
-	tasks = append(tasks[index:], tasks[index+1:]...)
+	removedTask := tasks [index]
+	tasks = append(tasks[:index], tasks[index+1:]...)
 
 	//check if anything was removed
 	if len(tasks) == originalLength {
@@ -126,8 +150,10 @@ func RemoveTask(id int) error {
         return fmt.Errorf("failed to save tasks after removal: %w", err)
     }
     
-    fmt.Printf("✅ Successfully removed task with ID %d\n", id)
+    fmt.Printf("✅ Successfully removed task %d: %s\n", id, removedTask.Title)
     return nil
 
 }
 //undo last removal
+//edit task
+//searching

@@ -17,61 +17,90 @@ func getInput(prompt string, r *bufio.Reader) (string, error) {
 	return strings.TrimSpace(input), err
 }
 
-func createTask() Task{
+func createTask() {
 	reader := bufio.NewReader(os.Stdin)
 	title, _ := getInput("whats the task title:", reader)
 	desc, _ := getInput("give some description:", reader)
 
-	t, err:= AddTask(title, desc)
+	_, err:= AddTask(title, desc)
 	if err != nil {
-        panic(err)
+        fmt.Printf("Error adding task: %v\n", err)
     }
-	return t
 }
 //c- mark complete r-remove a task  u- undo removal
-func Options(t Task) {
+func Options() {
 	reader := bufio.NewReader(os.Stdin)
-	opt, _ := getInput("how would like to proceed \n (C- mark complete) \n <R-remove a task> \n <X- close prompt window>", reader)
 
-	switch opt {
-	case "C" :
-		id, _ := getInput("please enter id of task to delete",reader)
+	for {
+		fmt.Println("\n What would like to do?")
+		fmt.Println("[C] mark task as complete")
+		fmt.Println("[R] remove a task")
+		fmt.Println("[A] add a task")
+		fmt.Println("[X] exit")
 
-		i64, err := strconv.ParseInt(id, 10, 64)
-		if err != nil {
-			fmt.Println("id must be a number")
-			Options(t)
-		}
-		t.Complete(int(i64))
+		opt, _ := getInput("\n your choice",reader)
+		opt = strings.ToUpper(opt)
 
-		fmt.Println("")
+		switch opt {
+		case "C" :
+			idStr, _ := getInput("Enter task id to mark as complete",reader)
+			id, err := strconv.Atoi(idStr)
+			if err!= nil {
+				fmt.Println("invalid Id.please enter a number")
+				continue
+			}
+			err = Complete(id)
+			if err != nil {
+				fmt.Printf("%v\n", err)
+			}
+			
+		case "R" :
+			idStr, _ := getInput("Enter task id to remove",reader)
+			id, err := strconv.Atoi(idStr)
+			if err!= nil {
+				fmt.Println("invalid Id.please enter a number")
+				continue
+			}
 	
-	case "R" :
-		id, _ := getInput("please enter id of task to delete",reader)
+			//confirm deletion
+			confirm, _ := getInput("are you sure you want to delete task #%d? (y/N)", reader)
+			if strings.ToLower(confirm) != "y" {
+				fmt.Println("deletion cancelled")
+				continue
+			}
 
-		i64, err := strconv.ParseInt(id, 10, 64)
-		if err != nil {
-			fmt.Println("id must be a number")
-			break
-		}
+			err = RemoveTask(id)
+			if err != nil {
+				fmt.Println(err)
+			}
+		
+		case "A" :
+			createTask()
 
-		err = RemoveTask(int(i64))
-		if err != nil {
-			fmt.Println(err)
+		case "X" :
+			fmt.Println("\n goodbye >>>>")
+			return
+		default:
+			fmt.Println("Invalid option.please choose C, R, A or X")
+			Options()	
 		}
-		fmt.Println("")
-	
-	case "X" :
-		fmt.Println("")
-	
-	default:
-		fmt.Println("that was not a valid option...")
-		Options(t)	
 	}
+
+
 }
 
 func main() {
-	tasks := createTask()
-	// Options(tasks)
-	fmt.Println(tasks)
+	fmt.Println("=== TaskManager CLI ===")
+	//create a new file if it doesnt exist
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		//create empty task file
+		err = saveAllTask([]Task{})
+		if err != nil {
+			fmt.Printf("error initializing: %v\n", err)
+			return
+		}
+		fmt.Println("welcome! created new task file")
+	}
+	//start the cli
+	Options()
 }
