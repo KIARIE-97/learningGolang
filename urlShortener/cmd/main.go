@@ -22,6 +22,11 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func shortenHandler(w http.ResponseWriter, r *http.Request) {
+	
+	if r.Method != http.MethodPost {
+		http.Error(w, "this is a post only endpoint", http.StatusMethodNotAllowed)
+		return
+	}
 	var req shortenRequest
 
 	err:= json.NewDecoder(r.Body).Decode(&req)
@@ -39,8 +44,10 @@ func shortenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main () {
-	http.HandleFunc("/", homeHandler)
-	http.HandleFunc("/shorten", shortenHandler)
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", homeHandler)
+	mux.HandleFunc("/shorten", shortenHandler)
 
 	fmt.Println("server is running on port 8080")
 
