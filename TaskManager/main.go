@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // var filename string = "tasks.json"
@@ -17,8 +18,15 @@ func getInput(prompt string, r *bufio.Reader) (string, error) {
 	return strings.TrimSpace(input), err
 }
 
-func processTask() {
+func processTask(task Task) {
+	fmt.Println("started procesing task:", task.Title, task.ID )
+	time.Sleep(3* time.Second)
 	
+	err := Complete(task.ID)
+	if err!= nil {
+		fmt.Printf("failed to complete task #%d: %v\n", task.ID,  err)
+	}
+	fmt.Printf("done processing #%d: %s\n", task.ID, task.Title)
 }
 
 func createTask() {
@@ -40,6 +48,7 @@ func Options() {
 		fmt.Println("[C] mark task as complete")
 		fmt.Println("[R] remove a task")
 		fmt.Println("[A] add a task")
+		fmt.Println("[P] process a task")
 		fmt.Println("[X] exit")
 
 		opt, _ := getInput("\n your choice",reader)
@@ -81,6 +90,20 @@ func Options() {
 		case "A" :
 			createTask()
 
+		case "P" :
+			idStr, _ := getInput("Enter task id to mark as complete",reader)
+			id, err := strconv.Atoi(idStr)
+			if err!= nil {
+				fmt.Println("invalid Id.please enter a number")
+				continue
+			}
+			task, err := getById(id)
+			    if err != nil {
+                fmt.Printf("❌ %v\n", err)
+                continue
+            }
+			go processTask(task)	
+
 		case "X" :
 			fmt.Println("\n goodbye >>>>")
 			return
@@ -104,6 +127,9 @@ func main() {
 			return
 		}
 		fmt.Println("welcome! created new task file")
+		//seed
+		//   AddTask("Test task 1", "for testing concurrency")
+        // AddTask("Test task 2", "another test")
 	}
 	//start the cli
 	Options()
