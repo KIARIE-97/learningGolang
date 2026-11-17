@@ -17,6 +17,10 @@ func getInput(prompt string, r *bufio.Reader) (string, error) {
 	return strings.TrimSpace(input), err
 }
 
+func processTask() {
+	
+}
+
 func createTask() {
 	reader := bufio.NewReader(os.Stdin)
 	title, _ := getInput("whats the task title:", reader)
