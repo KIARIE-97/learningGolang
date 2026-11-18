@@ -1,14 +1,8 @@
 [
  {
-  "id": 1,
-  "title": "Test task 1",
-  "description": "for testing concurrency",
-  "completed": true
- },
- {
   "id": 2,
   "title": "Test task 2",
   "description": "another test",
-  "completed": false
+  "completed": true
  }
 ]

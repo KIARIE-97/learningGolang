@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 )
 
 //small letter fields are auomaticallay private so for export make them capital
@@ -16,8 +17,9 @@ type Task struct {
 	Completed   bool	`json:"completed"`
 }
 
-
 var filename string = "tasks.json"
+//usng a mutex(mutual exclusion)-locking mechanism,  to lock file access i.e reads and writes
+var fileMutex sync.Mutex
 
 //load task- waiting area avoids overwriting
 func loadTasks() ([]Task, error) {
@@ -77,6 +79,8 @@ func AddTask(title string, desc string) (Task, error){
 
 // save to json
 func  saveAllTask(tasks []Task) error{
+	fileMutex.Lock()
+	defer fileMutex.Unlock()
 	data, err := json.MarshalIndent(tasks, "", " ")
 	if err !=nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
@@ -93,6 +97,8 @@ func  saveAllTask(tasks []Task) error{
 
 //mark complete
 func  Complete(id int) error {
+	fileMutex.Lock()
+	defer fileMutex.Unlock()
 	tasks,err := loadTasks()
 	if err != nil {
 		return err
@@ -133,6 +139,8 @@ func getById (id int) (*Task, error) {
 //removetask - use of slice
 func RemoveTask(id int) error {
 	//load current tasks
+	fileMutex.Lock()
+	defer fileMutex.Unlock()
 	tasks, err := loadTasks()
 	if err != nil {
 		return fmt.Errorf("failed to load tasks: %w",err)

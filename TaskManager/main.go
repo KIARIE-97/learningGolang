@@ -6,10 +6,22 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
-
-// var filename string = "tasks.json"
+//notification will be sebt via a channel to signal a job is done
+type Notification struct{
+	TaskId int
+	TaskName string
+	success bool
+	Message string
+	// Duration time.ParseDuration()
+}
+//channel
+var notifications = make(chan Notification)
+// now tracking of running / tasking being processed so as not to do same task twice
+var runningTasks = make(map[int]bool)
+var runMutex sync.Mutex
 
 func getInput(prompt string, r *bufio.Reader) (string, error) {
 	fmt.Print(prompt)
@@ -19,14 +31,39 @@ func getInput(prompt string, r *bufio.Reader) (string, error) {
 }
 
 func processTask(task Task) {
+	//mark task as running
+	runMutex.Lock()
+	runningTasks[task.ID] = true
+	runMutex.Unlock()
+
+
 	fmt.Println("started procesing task:", task.Title, task.ID )
-	time.Sleep(3* time.Second)
-	
+
+	go func () {
+
+	time.Sleep(6* time.Second)
+
 	err := Complete(task.ID)
-	if err!= nil {
-		fmt.Printf("failed to complete task #%d: %v\n", task.ID,  err)
+	//notification
+	notif := Notification {
+		TaskId: task.ID,
+		TaskName: task.Title,
+		success: err == nil,
 	}
-	fmt.Printf("done processing #%d: %s\n", task.ID, task.Title)
+	if err != nil {
+		notif.Message = err.Error()
+	}else {
+		notif.Message = "task completed successfully"
+	}
+	//now sendn the notification via channel
+	notifications <- notif
+
+	runMutex.Lock()
+	delete(runningTasks, task.ID)
+	runMutex.Unlock()
+
+	}()
+fmt.Println("continue using the cli while this runs")
 }
 
 func createTask() {
