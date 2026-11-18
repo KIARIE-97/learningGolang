@@ -102,7 +102,7 @@ func Options() {
                 fmt.Printf("❌ %v\n", err)
                 continue
             }
-			go processTask(task)	
+			go processTask(*task)	
 
 		case "X" :
 			fmt.Println("\n goodbye >>>>")
@@ -121,15 +121,15 @@ func main() {
 	//create a new file if it doesnt exist
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		//create empty task file
-		err = saveAllTask([]Task{})
-		if err != nil {
-			fmt.Printf("error initializing: %v\n", err)
-			return
-		}
-		fmt.Println("welcome! created new task file")
+		// err = saveAllTask([]Task{})
+		// if err != nil {
+		// 	fmt.Printf("error initializing: %v\n", err)
+		// 	return
+		// }
+		// fmt.Println("welcome! created new task file")
 		//seed
-		//   AddTask("Test task 1", "for testing concurrency")
-        // AddTask("Test task 2", "another test")
+		  AddTask("Test task 1", "for testing concurrency")
+        AddTask("Test task 2", "another test")
 	}
 	//start the cli
 	Options()

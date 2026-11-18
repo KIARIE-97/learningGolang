@@ -116,23 +116,18 @@ func  Complete(id int) error {
 
 	return fmt.Errorf("task with ID %d not found", id)
 }
-func getById (id int) (Task, error) {
+func getById (id int) (*Task, error) {
 	tasks, err := loadTasks()
 	if err!= nil {
-		return Task{}, fmt.Errorf("failed to load tasks: %w", err)
+		return nil, fmt.Errorf("failed to load tasks: %w", err)
 	}
 	//find task
-	index := -1
-	for i, task:= range tasks{
-		if task.ID == id {
-			index = i
-			break
+	for i := range tasks{
+		if tasks[i].ID == id {
+			return &tasks[i], nil
 		}
 	}
-	if index == -1 {return Task{}, fmt.Errorf("task with id %d not found", id)}
-	foundTask := tasks[index]
-
-	return foundTask, nil
+	return nil, fmt.Errorf("task with id #%d: not found", id)
 }
 
 //removetask - use of slice
